@@ -133,6 +133,7 @@ impl Main {
             .base()
             .get_node_as::<PathFollow2D>("MobPath/MobSpawnLocation");
 
+        // Instantiate the mob scene.
         let mut mob_scene = self.mob_scene.instantiate_as::<RigidBody2D>();
 
         let mut rng = rand::thread_rng();
