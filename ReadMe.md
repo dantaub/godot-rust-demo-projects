@@ -16,8 +16,10 @@ code that seem strange, please check both book and docs first!
 
 We currently feature the following demo projects:
 
-- [**Dodge the Creeps**](dodge-the-creeps)  
+- [**Dodge the Creeps**](dodge-the-creeps)
   A simple game where you dodge enemies. Ported from the official Godot tutorial.
+- [**Kill the Creeps**](kill-the-creeps)
+  Shoot spiraling fireballs to defeat enemies and track your kill count.
 
 - [**Hot reload**](hot-reload)  
   Showcases how classes and their state can be hot-reloaded in the Godot editor.

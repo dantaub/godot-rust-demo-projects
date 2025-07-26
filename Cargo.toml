@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "dodge-the-creeps/rust",
+    "kill-the-creeps/rust",
     "hot-reload/rust",
 ]
 
