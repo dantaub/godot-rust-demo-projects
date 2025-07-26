@@ -6,6 +6,7 @@ fn main() {
     use kill_the_creeps as _;
 
     let godot = env::var("GODOT4_BIN").expect("GODOT4_BIN environment variable not set");
+    println!("Starting Godot from: {}", godot);
 
     let status = Command::new(godot)
         .arg("--path")
