@@ -122,7 +122,7 @@ impl Main {
         self.hud.bind_mut().update_score(self.score);
     }
 
-    pub fn on_enemy_killed(&mut self) {
+    pub fn on_player_hit(&mut self) {
         self.kills += 1;
         self.hud.bind_mut().update_kills(self.kills);
     }

@@ -127,7 +127,7 @@ impl IArea2D for Player {
             fireball
                 .signals()
                 .enemy_killed()
-                .connect_other(&main, main_scene::Main::on_enemy_killed);
+                .connect_other(&main, main_scene::Main::on_player_hit);
             parent_node.add_child(&fireball);
         }
     }
