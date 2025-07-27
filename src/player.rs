@@ -1,4 +1,4 @@
-use crate::{fireball, main_scene};
+use crate::fireball;
 use godot::classes::{AnimatedSprite2D, Area2D, CollisionShape2D, IArea2D, Input, PackedScene};
 use godot::prelude::*;
 
@@ -8,6 +8,8 @@ pub struct Player {
     speed: real,
     screen_size: Vector2,
     fireball_scene: OnReady<Gd<PackedScene>>,
+    #[export]
+    invincibility_time: f64,
 
     base: Base<Area2D>,
 }
@@ -39,7 +41,52 @@ impl Player {
             .base()
             .get_node_as::<CollisionShape2D>("CollisionShape2D");
 
-        collision_shape.set_disabled(false);
+        collision_shape.set_deferred("disabled", &false.to_variant());
+    }
+
+    pub fn respawn(&mut self, pos: Vector2) {
+        self.base_mut().set_global_position(pos);
+        self.base_mut().show();
+
+        let mut shape = self
+            .base()
+            .get_node_as::<CollisionShape2D>("CollisionShape2D");
+        shape.set_disabled(true);
+
+        let mut timer = self
+            .base()
+            .get_tree()
+            .unwrap()
+            .create_timer(self.invincibility_time)
+            .unwrap();
+        timer.connect("timeout", &self.base().callable("enable_collision"));
+    }
+
+    #[func]
+    fn enable_collision(&mut self) {
+        let mut shape = self
+            .base()
+            .get_node_as::<CollisionShape2D>("CollisionShape2D");
+        shape.set_disabled(false);
+    }
+
+    pub fn flash_red(&mut self) {
+        let mut sprite = self
+            .base()
+            .get_node_as::<AnimatedSprite2D>("AnimatedSprite2D");
+        sprite.set_modulate(Color::from_rgba(1.0, 0.0, 0.0, 1.0));
+        // Placeholder: play a hit animation when available.
+
+        let mut timer = self.base().get_tree().unwrap().create_timer(0.2).unwrap();
+        timer.connect("timeout", &self.base().callable("clear_flash"));
+    }
+
+    #[func]
+    fn clear_flash(&mut self) {
+        let mut sprite = self
+            .base()
+            .get_node_as::<AnimatedSprite2D>("AnimatedSprite2D");
+        sprite.set_modulate(Color::from_rgba(1.0, 1.0, 1.0, 1.0));
     }
 }
 
@@ -50,6 +97,7 @@ impl IArea2D for Player {
             speed: 400.0,
             screen_size: Vector2::new(0.0, 0.0),
             fireball_scene: OnReady::from_loaded("res://Fireball.tscn"),
+            invincibility_time: 0.5,
             base,
         }
     }
@@ -120,14 +168,10 @@ impl IArea2D for Player {
         let input = Input::singleton();
         if input.is_action_just_pressed("shoot") {
             let mut parent_node = self.base().get_parent().unwrap();
-            let main = parent_node.clone().cast::<main_scene::Main>();
             let mut fireball = self.fireball_scene.instantiate_as::<fireball::Fireball>();
             fireball.bind_mut().launch(Vector2::UP, 600.0, 10.0);
             fireball.set_global_position(self.base().get_global_position());
-            fireball
-                .signals()
-                .enemy_killed()
-                .connect_other(&main, main_scene::Main::on_player_hit);
+            // Fireballs no longer report enemy kills.
             parent_node.add_child(&fireball);
         }
     }

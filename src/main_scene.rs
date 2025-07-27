@@ -16,7 +16,9 @@ pub struct Main {
     music: OnReady<Gd<AudioStreamPlayer>>,
     death_sound: OnReady<Gd<AudioStreamPlayer>>,
     score: i64,
-    kills: i64,
+    health: i64,
+    #[export]
+    starting_health: i64,
     base: Base<Node>,
 }
 
@@ -33,7 +35,8 @@ impl INode for Main {
             music: OnReady::from_node("Music"),
             death_sound: OnReady::from_node("DeathSound"),
             score: 0,
-            kills: 0,
+            health: 0,
+            starting_health: 4,
             base,
         }
     }
@@ -44,11 +47,11 @@ impl INode for Main {
         // Get a Gd<Main> pointer to this instance.
         let main = self.to_gd();
 
-        // Connect Player::hit -> Main::game_over.
+        // Connect Player::hit -> Main::on_player_hit.
         self.player
             .signals()
             .hit()
-            .connect_other(&main, Self::game_over);
+            .connect_other(&main, Self::on_player_hit);
 
         // Connect Hud::start_game -> Main::new_game.
         self.hud
@@ -96,14 +99,14 @@ impl Main {
         let start_position = self.base().get_node_as::<Marker2D>("StartPosition");
 
         self.score = 0;
-        self.kills = 0;
+        self.health = self.starting_health;
 
         self.player.bind_mut().start(start_position.get_position());
         self.start_timer().start();
 
         let hud = self.hud.bind_mut();
         hud.update_score(self.score);
-        hud.update_kills(self.kills);
+        hud.update_health(self.health);
         hud.show_message("Get Ready".into());
 
         self.music.play();
@@ -123,8 +126,19 @@ impl Main {
     }
 
     pub fn on_player_hit(&mut self) {
-        self.kills += 1;
-        self.hud.bind_mut().update_kills(self.kills);
+        if self.health > 0 {
+            self.health -= 1;
+        }
+        self.hud.bind_mut().update_health(self.health);
+
+        if self.health <= 0 {
+            self.game_over();
+        } else {
+            let mut player = self.player.bind_mut();
+            let pos = player.base().get_global_position();
+            player.respawn(pos);
+            player.flash_red();
+        }
     }
 
     // No #[func], connected in pure Rust.

@@ -47,10 +47,10 @@ impl Hud {
         label.set_text(&score.to_string());
     }
 
-    pub fn update_kills(&self, kills: i64) {
+    pub fn update_health(&self, health: i64) {
         let mut label = self.base().get_node_as::<Label>("HealthLabel");
 
-        label.set_text(&kills.to_string());
+        label.set_text(&health.to_string());
     }
 
     #[func]
