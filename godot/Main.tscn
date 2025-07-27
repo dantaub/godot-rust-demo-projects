@@ -2,8 +2,8 @@
 
 [ext_resource type="PackedScene" uid="uid://4vwrqjegqwpj" path="res://Player.tscn" id="3"]
 [ext_resource type="PackedScene" uid="uid://cq5nqsfgeg6xr" path="res://Hud.tscn" id="4"]
-[ext_resource type="AudioStream" uid="uid://cpl8o16y1hgao" path="res://art/Gray Trip.ogg" id="5"]
-[ext_resource type="AudioStream" uid="uid://6rwulnnyo3if" path="res://art/gameover.wav" id="6"]
+[ext_resource type="AudioStream" uid="uid://c3kamp1xcx321" path="res://art/Gray Trip.ogg" id="5"]
+[ext_resource type="AudioStream" uid="uid://cfj3mj0ku8jvp" path="res://art/gameover.wav" id="6"]
 
 [sub_resource type="Curve2D" id="1"]
 _data = {

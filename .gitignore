@@ -28,3 +28,7 @@ exp.rs
 
 # Windows specific
 desktop.ini
+
+# Local engine downloads
+Godot_v*
+packages-microsoft-prod.deb
