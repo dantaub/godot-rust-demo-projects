@@ -48,7 +48,7 @@ impl Hud {
     }
 
     pub fn update_kills(&self, kills: i64) {
-        let mut label = self.base().get_node_as::<Label>("KillsLabel");
+        let mut label = self.base().get_node_as::<Label>("HealthLabel");
 
         label.set_text(&kills.to_string());
     }
