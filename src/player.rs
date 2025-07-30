@@ -51,7 +51,9 @@ impl Player {
         let mut shape = self
             .base()
             .get_node_as::<CollisionShape2D>("CollisionShape2D");
-        shape.set_disabled(true);
+        // Defer disabling the collision shape to avoid "Can't change this state"
+        // errors while the physics engine is flushing queries.
+        shape.set_deferred("disabled", &true.to_variant());
 
         let mut timer = self
             .base()
@@ -67,7 +69,9 @@ impl Player {
         let mut shape = self
             .base()
             .get_node_as::<CollisionShape2D>("CollisionShape2D");
-        shape.set_disabled(false);
+        // Re-enable the collision shape after the invincibility timer. Use
+        // `set_deferred` to ensure it happens outside of the physics query flush.
+        shape.set_deferred("disabled", &false.to_variant());
     }
 
     pub fn flash_red(&mut self) {
