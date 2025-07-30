@@ -43,6 +43,9 @@ impl IArea2D for Fireball {
         self.signals()
             .body_entered()
             .connect_self(Self::on_body_entered);
+
+        let mut timer = self.base().get_tree().unwrap().create_timer(3.0).unwrap();
+        timer.connect("timeout", &self.base().callable("queue_free"));
     }
 
     fn physics_process(&mut self, delta: f64) {
