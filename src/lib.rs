@@ -8,6 +8,7 @@
 use godot::prelude::*;
 
 mod fireball;
+mod health;
 mod hud;
 mod main_scene;
 mod mob;

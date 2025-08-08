@@ -108,6 +108,10 @@ impl Player {
             .get_node_as::<AnimatedSprite2D>("AnimatedSprite2D");
         sprite.set_modulate(Color::from_rgba(1.0, 1.0, 1.0, 1.0));
     }
+
+    pub fn get_screen_size(&self) -> Vector2 {
+        self.screen_size
+    }
 }
 
 #[godot_api]
