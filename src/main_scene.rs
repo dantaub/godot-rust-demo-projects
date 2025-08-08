@@ -1,4 +1,4 @@
-use crate::{hud, mob, player};
+use crate::{health, hud, mob, player};
 
 use godot::classes::{AudioStreamPlayer, Marker2D, PathFollow2D, RigidBody2D, Timer};
 use godot::prelude::*;
@@ -11,12 +11,15 @@ use std::f32::consts::PI;
 #[class(base=Node)]
 pub struct Main {
     mob_scene: OnReady<Gd<PackedScene>>,
+    health_scene: OnReady<Gd<PackedScene>>,
     player: OnReady<Gd<player::Player>>,
     hud: OnReady<Gd<hud::Hud>>,
     music: OnReady<Gd<AudioStreamPlayer>>,
     death_sound: OnReady<Gd<AudioStreamPlayer>>,
     score: i64,
     health: i64,
+    kill_count: i64,
+    next_health_kills: i64,
     #[export]
     starting_health: i64,
     base: Base<Node>,
@@ -30,12 +33,15 @@ impl INode for Main {
         Self {
             // OnReady::from_loaded(path) == OnReady::new(|| tools::load(path)).
             mob_scene: OnReady::from_loaded("res://Mob.tscn"),
+            health_scene: OnReady::from_loaded("res://Health.tscn"),
             player: OnReady::from_node("Player"),
             hud: OnReady::from_node("Hud"),
             music: OnReady::from_node("Music"),
             death_sound: OnReady::from_node("DeathSound"),
             score: 0,
             health: 0,
+            kill_count: 0,
+            next_health_kills: 0,
             starting_health: 4,
             base,
         }
@@ -93,6 +99,8 @@ impl Main {
 
         self.score = 0;
         self.health = self.starting_health;
+        self.kill_count = 0;
+        self.next_health_kills = rand::thread_rng().gen_range(6..=14);
 
         self.player.bind_mut().start(start_position.get_position());
         self.start_timer().start();
@@ -130,6 +138,13 @@ impl Main {
     fn on_enemy_killed(&mut self) {
         self.score += 1;
         self.hud.bind_mut().update_score(self.score);
+
+        self.kill_count += 1;
+        if self.kill_count >= self.next_health_kills {
+            self.spawn_health();
+            self.kill_count = 0;
+            self.next_health_kills = rand::thread_rng().gen_range(6..=14);
+        }
     }
 
     // No #[func], connected in pure Rust.
@@ -171,5 +186,27 @@ impl Main {
 
     fn mob_timer(&self) -> Gd<Timer> {
         self.base().get_node_as::<Timer>("MobTimer")
+    }
+
+    fn spawn_health(&mut self) {
+        let mut health_pickup = self.health_scene.instantiate_as::<health::Health>();
+        let mut rng = rand::thread_rng();
+        let screen_size = self.player.bind().get_screen_size();
+        let x = rng.gen_range(0.0..screen_size.x);
+        let y = rng.gen_range(0.0..screen_size.y);
+        health_pickup.set_global_position(Vector2::new(x, y));
+
+        let amount = if rng.gen_bool(0.1) { 3 } else { 1 };
+        health_pickup.bind_mut().set_heal_amount(amount);
+
+        let main = self.to_gd();
+        health_pickup.connect("collected", &main.callable("on_health_collected"));
+        self.base_mut().add_child(&health_pickup);
+    }
+
+    #[func]
+    fn on_health_collected(&mut self, amount: i64) {
+        self.health = (self.health + amount).min(self.starting_health);
+        self.hud.bind_mut().update_health(self.health);
     }
 }
