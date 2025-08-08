@@ -59,12 +59,6 @@ impl INode for Main {
             .start_game()
             .connect_other(&main, Self::new_game);
 
-        // Connect Main.ScoreTimer::timeout -> Main::on_score_timer_timeout.
-        self.score_timer()
-            .signals()
-            .timeout()
-            .connect_other(&main, Self::on_score_timer_timeout);
-
         // Connect Main.MobTimer::timeout -> Main::on_mob_timer_timeout.
         self.mob_timer()
             .signals()
@@ -85,7 +79,6 @@ impl INode for Main {
 impl Main {
     // No #[func] here, this method is directly called from Rust (via type-safe signals).
     fn game_over(&mut self) {
-        self.score_timer().stop();
         self.mob_timer().stop();
 
         self.hud.bind_mut().show_game_over();
@@ -115,14 +108,6 @@ impl Main {
     #[func] // needed because connected in Editor UI (see ready).
     fn on_start_timer_timeout(&mut self) {
         self.mob_timer().start();
-        self.score_timer().start();
-    }
-
-    // No #[func], connected in pure Rust.
-    fn on_score_timer_timeout(&mut self) {
-        self.score += 1;
-
-        self.hud.bind_mut().update_score(self.score);
     }
 
     pub fn on_player_hit(&mut self) {
@@ -139,6 +124,12 @@ impl Main {
             player.respawn(pos);
             player.flash_red();
         }
+    }
+
+    #[func]
+    fn on_enemy_killed(&mut self) {
+        self.score += 1;
+        self.hud.bind_mut().update_score(self.score);
     }
 
     // No #[func], connected in pure Rust.
@@ -176,10 +167,6 @@ impl Main {
     // These timers could also be stored as OnReady fields, but are now fetched via function for demonstration purposes.
     fn start_timer(&self) -> Gd<Timer> {
         self.base().get_node_as::<Timer>("StartTimer")
-    }
-
-    fn score_timer(&self) -> Gd<Timer> {
-        self.base().get_node_as::<Timer>("ScoreTimer")
     }
 
     fn mob_timer(&self) -> Gd<Timer> {

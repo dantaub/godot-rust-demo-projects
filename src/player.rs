@@ -10,6 +10,10 @@ pub struct Player {
     fireball_scene: OnReady<Gd<PackedScene>>,
     #[export]
     invincibility_time: f64,
+    direction: Vector2,
+    last_horizontal: real,
+    last_vertical: real,
+    hit: bool,
 
     base: Base<Area2D>,
 }
@@ -22,6 +26,10 @@ impl Player {
 
     #[func]
     fn on_player_body_entered(&mut self, _body: Gd<Node2D>) {
+        if self.hit {
+            return;
+        }
+        self.hit = true;
         self.base_mut().hide();
         self.signals().hit().emit();
 
@@ -30,6 +38,8 @@ impl Player {
             .get_node_as::<CollisionShape2D>("CollisionShape2D");
 
         collision_shape.set_deferred("disabled", &true.to_variant());
+        self.base_mut()
+            .set_deferred("monitoring", &false.to_variant());
     }
 
     #[func]
@@ -42,6 +52,9 @@ impl Player {
             .get_node_as::<CollisionShape2D>("CollisionShape2D");
 
         collision_shape.set_deferred("disabled", &false.to_variant());
+        self.base_mut()
+            .set_deferred("monitoring", &true.to_variant());
+        self.hit = false;
     }
 
     pub fn respawn(&mut self, pos: Vector2) {
@@ -72,6 +85,9 @@ impl Player {
         // Re-enable the collision shape after the invincibility timer. Use
         // `set_deferred` to ensure it happens outside of the physics query flush.
         shape.set_deferred("disabled", &false.to_variant());
+        self.base_mut()
+            .set_deferred("monitoring", &true.to_variant());
+        self.hit = false;
     }
 
     pub fn flash_red(&mut self) {
@@ -102,6 +118,10 @@ impl IArea2D for Player {
             screen_size: Vector2::new(0.0, 0.0),
             fireball_scene: OnReady::from_loaded("res://Fireball.tscn"),
             invincibility_time: 0.5,
+            direction: Vector2::UP,
+            last_horizontal: 1.0,
+            last_vertical: -1.0,
+            hit: false,
             base,
         }
     }
@@ -129,19 +149,24 @@ impl IArea2D for Player {
         let input = Input::singleton();
         if input.is_action_pressed("move_right") {
             velocity += Vector2::RIGHT;
+            self.last_horizontal = 1.0;
         }
         if input.is_action_pressed("move_left") {
             velocity += Vector2::LEFT;
+            self.last_horizontal = -1.0;
         }
         if input.is_action_pressed("move_down") {
             velocity += Vector2::DOWN;
+            self.last_vertical = 1.0;
         }
         if input.is_action_pressed("move_up") {
             velocity += Vector2::UP;
+            self.last_vertical = -1.0;
         }
 
         if velocity.length() > 0.0 {
-            velocity = velocity.normalized() * self.speed;
+            self.direction = velocity.normalized();
+            velocity = self.direction * self.speed;
 
             let animation;
 
@@ -173,9 +198,15 @@ impl IArea2D for Player {
         if input.is_action_just_pressed("shoot") {
             let mut parent_node = self.base().get_parent().unwrap();
             let mut fireball = self.fireball_scene.instantiate_as::<fireball::Fireball>();
-            fireball.bind_mut().launch(Vector2::UP, 600.0, 10.0);
+            let direction = if self.last_vertical > 0.0 {
+                Vector2::DOWN
+            } else {
+                Vector2::UP
+            };
+            let angular_speed = 10.0 * self.last_horizontal * -self.last_vertical;
+            fireball.bind_mut().launch(direction, 600.0, angular_speed);
             fireball.set_global_position(self.base().get_global_position());
-            // Fireballs no longer report enemy kills.
+            fireball.connect("enemy_killed", &parent_node.callable("on_enemy_killed"));
             parent_node.add_child(&fireball);
         }
     }

@@ -6,6 +6,7 @@ use godot::prelude::*;
 pub struct Fireball {
     velocity: Vector2,
     angular_speed: real,
+    hit: bool,
     base: Base<Area2D>,
 }
 
@@ -15,16 +16,25 @@ impl Fireball {
     pub fn enemy_killed();
 
     pub fn launch(&mut self, direction: Vector2, speed: real, angular_speed: real) {
-        self.velocity = direction.normalized() * speed;
+        let direction = direction.normalized();
+        self.velocity = direction * speed;
         self.angular_speed = angular_speed;
+        self.base_mut().set_rotation(direction.angle());
+        self.hit = false;
     }
 
     #[func]
     fn on_body_entered(&mut self, mut body: Gd<Node2D>) {
+        if self.hit {
+            return;
+        }
+        self.hit = true;
         if body.is_in_group("mobs") {
             body.queue_free();
             self.signals().enemy_killed().emit();
         }
+        self.base_mut()
+            .set_deferred("monitoring", &false.to_variant());
         self.base_mut().queue_free();
     }
 }
@@ -35,6 +45,7 @@ impl IArea2D for Fireball {
         Self {
             velocity: Vector2::ZERO,
             angular_speed: 0.0,
+            hit: false,
             base,
         }
     }
@@ -49,9 +60,13 @@ impl IArea2D for Fireball {
     }
 
     fn physics_process(&mut self, delta: f64) {
-        let rot = self.angular_speed * real::from_f64(delta);
+        let delta = real::from_f64(delta);
+        let rot = self.angular_speed * delta;
         self.velocity = self.velocity.rotated(rot);
-        let change = self.velocity * real::from_f64(delta);
-        self.base_mut().translate(change);
+        let change = self.velocity * delta;
+        let position = self.base().get_global_position() + change;
+        self.base_mut().set_global_position(position);
+        let rotation = self.base().get_rotation() + rot;
+        self.base_mut().set_rotation(rotation);
     }
 }
